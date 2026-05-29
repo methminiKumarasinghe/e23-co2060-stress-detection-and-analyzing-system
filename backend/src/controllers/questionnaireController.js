@@ -87,6 +87,30 @@ const sumGroup = (answers, ids) => {
   return sum;
 };
 
+const getDepressionSeverity = (score) => {
+  if (score >= 28) return "extremely_severe";
+  if (score >= 21) return "severe";
+  if (score >= 14) return "moderate";
+  if (score >= 10) return "mild";
+  return "normal";
+};
+
+const getAnxietySeverity = (score) => {
+  if (score >= 20) return "extremely_severe";
+  if (score >= 15) return "severe";
+  if (score >= 10) return "moderate";
+  if (score >= 8) return "mild";
+  return "normal";
+};
+
+const getStressSeverity = (score) => {
+  if (score >= 34) return "extremely_severe";
+  if (score >= 26) return "severe";
+  if (score >= 19) return "moderate";
+  if (score >= 15) return "mild";
+  return "normal";
+};
+
 export const getQuestionnaireQuestions = async (req, res) => {
   try {
     const slug = "default";
@@ -159,15 +183,27 @@ export const calculateQuestionnaireScore = (req, res) => {
       }
     }
 
-    const stressScore = sumGroup(answers, DASS_21_GROUPS.stress);
-    const anxietyScore = sumGroup(answers, DASS_21_GROUPS.anxiety);
-    const depressionScore = sumGroup(answers, DASS_21_GROUPS.depression);
+    // Raw sums are 0..21 for each scale (7 items, each 0..3)
+    // Many published DASS-21 thresholds assume scores are multiplied by 2.
+    const stressScoreRaw = sumGroup(answers, DASS_21_GROUPS.stress);
+    const anxietyScoreRaw = sumGroup(answers, DASS_21_GROUPS.anxiety);
+    const depressionScoreRaw = sumGroup(answers, DASS_21_GROUPS.depression);
 
-    if (stressScore === null || anxietyScore === null || depressionScore === null) {
+    if (stressScoreRaw === null || anxietyScoreRaw === null || depressionScoreRaw === null) {
       return res.status(400).json({ message: "Invalid answer value detected" });
     }
 
-    const totalScore = stressScore + anxietyScore + depressionScore;
+    // Scaled scores (0..42) to match the provided thresholds.
+    const stressScore = stressScoreRaw * 2;
+    const anxietyScore = anxietyScoreRaw * 2;
+    const depressionScore = depressionScoreRaw * 2;
+
+    const stressSeverity = getStressSeverity(stressScore);
+    const anxietySeverity = getAnxietySeverity(anxietyScore);
+    const depressionSeverity = getDepressionSeverity(depressionScore);
+
+    // Preserve the existing totalScore semantics (sum of raw answers across 21 items: 0..63)
+    const totalScore = stressScoreRaw + anxietyScoreRaw + depressionScoreRaw;
 
     let severity = "normal";
 
@@ -184,8 +220,15 @@ export const calculateQuestionnaireScore = (req, res) => {
       totalScore,
       severity,
       stressScore,
+      stressSeverity,
       anxietyScore,
+      anxietySeverity,
       depressionScore,
+      depressionSeverity,
+      // Extra debug/compat fields (do not remove without coordinating clients)
+      stressScoreRaw,
+      anxietyScoreRaw,
+      depressionScoreRaw,
     });
   } catch (error) {
     console.error("Error calculating questionnaire score:", error);
