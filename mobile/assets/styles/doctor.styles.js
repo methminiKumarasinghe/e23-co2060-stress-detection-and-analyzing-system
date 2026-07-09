@@ -209,6 +209,83 @@ const doctorStyles = StyleSheet.create({
   starButton: {
     padding: 2,
   },
+  searchContainer: {
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 20,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    gap: 12,
+  },
+  searchBarRow: {
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "center",
+  },
+  searchFieldContainer: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.inputBackground,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingHorizontal: 12,
+  },
+  searchIcon: {
+    marginRight: 6,
+  },
+  searchTextInput: {
+    flex: 1,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: COLORS.textDark,
+  },
+  clearButton: {
+    padding: 4,
+  },
+  searchActionButton: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 14,
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  horizontalFilterScroll: {
+    paddingVertical: 4,
+    alignItems: "center",
+    gap: 12,
+  },
+  filterGroup: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  filterChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  filterChipActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  filterChipText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: COLORS.textSecondary,
+  },
+  filterChipTextActive: {
+    color: COLORS.white,
+  },
+  filterDivider: {
+    width: 1,
+    height: 16,
+    backgroundColor: COLORS.border,
+  },
 });
 
 export default doctorStyles;

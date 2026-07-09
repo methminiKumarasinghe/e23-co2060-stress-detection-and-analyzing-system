@@ -9,6 +9,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 import SafeScreen from "../../components/SafeScreen";
 import doctorStyles from "../../assets/styles/doctor.styles";
@@ -75,6 +76,7 @@ export default function VolunteerDoctorsScreen({ navigation }) {
   const [availability, setAvailability] = useState("");
   const [sort, setSort] = useState("rating");
   const [isLoading, setIsLoading] = useState(false);
+  const [allSpecializations, setAllSpecializations] = useState([]);
 
   const fetchDoctors = async () => {
     setIsLoading(true);
@@ -85,7 +87,12 @@ export default function VolunteerDoctorsScreen({ navigation }) {
         availability,
         sort,
       });
-      setDoctors(data.doctors ?? []);
+      const docs = data.doctors ?? [];
+      setDoctors(docs);
+      if (allSpecializations.length === 0 && docs.length > 0) {
+        const specs = Array.from(new Set(docs.map((doc) => doc.specialization).filter(Boolean)));
+        setAllSpecializations(specs);
+      }
     } catch (error) {
       Alert.alert("Error", error.message);
     } finally {
@@ -95,11 +102,7 @@ export default function VolunteerDoctorsScreen({ navigation }) {
 
   useEffect(() => {
     fetchDoctors();
-  }, []);
-
-  const specializations = useMemo(() => {
-    return Array.from(new Set(doctors.map((doctor) => doctor.specialization).filter(Boolean)));
-  }, [doctors]);
+  }, [specialization, availability, sort]);
 
   return (
     <SafeScreen>
@@ -111,73 +114,132 @@ export default function VolunteerDoctorsScreen({ navigation }) {
           </Text>
         </View>
 
-        <View style={doctorStyles.card}>
-          <Text style={doctorStyles.label}>Search</Text>
-          <TextInput
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Name, hospital, or specialization"
-            style={doctorStyles.input}
-            placeholderTextColor="#7a8ea6"
-          />
-
-          <View style={doctorStyles.filterRow}>
-            <TextInput
-              value={specialization}
-              onChangeText={setSpecialization}
-              placeholder="Specialization"
-              style={[doctorStyles.input, doctorStyles.filterInput]}
-              placeholderTextColor="#7a8ea6"
-            />
+        <View style={doctorStyles.searchContainer}>
+          <View style={doctorStyles.searchBarRow}>
+            <View style={doctorStyles.searchFieldContainer}>
+              <Ionicons name="search-outline" size={18} color="#7a8ea6" style={doctorStyles.searchIcon} />
+              <TextInput
+                value={search}
+                onChangeText={setSearch}
+                onSubmitEditing={fetchDoctors}
+                placeholder="Search doctors by name, hospital..."
+                style={doctorStyles.searchTextInput}
+                placeholderTextColor="#7a8ea6"
+              />
+              {search.length > 0 && (
+                <Pressable onPress={() => setSearch("")} style={doctorStyles.clearButton}>
+                  <Ionicons name="close-circle" size={16} color="#7a8ea6" />
+                </Pressable>
+              )}
+            </View>
+            <Pressable style={doctorStyles.searchActionButton} onPress={fetchDoctors}>
+              <Ionicons name="arrow-forward-outline" size={18} color="#ffffff" />
+            </Pressable>
           </View>
 
-          <View style={doctorStyles.filterRow}>
-            {specializations.slice(0, 8).map((item) => (
-              <Pressable
-                key={item}
-                onPress={() => setSpecialization(item)}
-                style={[doctorStyles.chip, specialization === item ? doctorStyles.chipSuccess : null]}
-              >
-                <Text style={doctorStyles.chipText}>{item}</Text>
-              </Pressable>
-            ))}
-          </View>
+          {/* Horizontal scroll for filters */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={doctorStyles.horizontalFilterScroll}
+          >
+            {/* Availability Filters */}
+            <View style={doctorStyles.filterGroup}>
+              {filterOptions.map((value) => (
+                <Pressable
+                  key={value || "all"}
+                  onPress={() => setAvailability(value)}
+                  style={[
+                    doctorStyles.filterChip,
+                    availability === value ? doctorStyles.filterChipActive : null,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      doctorStyles.filterChipText,
+                      availability === value ? doctorStyles.filterChipTextActive : null,
+                    ]}
+                  >
+                    {value ? (value.charAt(0).toUpperCase() + value.slice(1)) : "All Availability"}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
 
-          <View style={doctorStyles.filterRow}>
-            {[
-              ["rating", "Top rated"],
-              ["reviews", "Most reviewed"],
-              ["experience", "Most experienced"],
-              ["newest", "Newest"],
-            ].map(([value, label]) => (
-              <Pressable
-                key={value}
-                onPress={() => setSort(value)}
-                style={[doctorStyles.chip, sort === value ? doctorStyles.chipSuccess : null]}
-              >
-                <Text style={doctorStyles.chipText}>{label}</Text>
-              </Pressable>
-            ))}
-          </View>
+            <View style={doctorStyles.filterDivider} />
 
-          <View style={doctorStyles.filterRow}>
-            {filterOptions.map((value) => (
-              <Pressable
-                key={value || "all"}
-                onPress={() => setAvailability(value)}
-                style={[
-                  doctorStyles.chip,
-                  availability === value ? doctorStyles.chipSuccess : null,
-                ]}
-              >
-                <Text style={doctorStyles.chipText}>{value ? value : "all"}</Text>
-              </Pressable>
-            ))}
-          </View>
+            {/* Sort Options */}
+            <View style={doctorStyles.filterGroup}>
+              {[
+                ["rating", "Top Rated"],
+                ["reviews", "Most Reviewed"],
+                ["experience", "Most Experienced"],
+                ["newest", "Newest"],
+              ].map(([value, label]) => (
+                <Pressable
+                  key={value}
+                  onPress={() => setSort(value)}
+                  style={[
+                    doctorStyles.filterChip,
+                    sort === value ? doctorStyles.filterChipActive : null,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      doctorStyles.filterChipText,
+                      sort === value ? doctorStyles.filterChipTextActive : null,
+                    ]}
+                  >
+                    {label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
 
-          <Pressable style={doctorStyles.button} onPress={fetchDoctors}>
-            <Text style={doctorStyles.buttonText}>Refresh Results</Text>
-          </Pressable>
+            {allSpecializations.length > 0 && (
+              <>
+                <View style={doctorStyles.filterDivider} />
+                {/* Specialization Options */}
+                <View style={doctorStyles.filterGroup}>
+                  <Pressable
+                    onPress={() => setSpecialization("")}
+                    style={[
+                      doctorStyles.filterChip,
+                      specialization === "" ? doctorStyles.filterChipActive : null,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        doctorStyles.filterChipText,
+                        specialization === "" ? doctorStyles.filterChipTextActive : null,
+                      ]}
+                    >
+                      All Specializations
+                    </Text>
+                  </Pressable>
+                  {allSpecializations.map((item) => (
+                    <Pressable
+                      key={item}
+                      onPress={() => setSpecialization(item)}
+                      style={[
+                        doctorStyles.filterChip,
+                        specialization === item ? doctorStyles.filterChipActive : null,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          doctorStyles.filterChipText,
+                          specialization === item ? doctorStyles.filterChipTextActive : null,
+                        ]}
+                      >
+                        {item}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </>
+            )}
+          </ScrollView>
         </View>
 
         {isLoading ? (
