@@ -1,5 +1,5 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
+# Docs for the Azure Web Apps Deploy action:
+# https://github.com/Azure/webapps-deploy
 
 name: Build and deploy Node.js app to Azure Web App - carewave-backend
 
@@ -12,47 +12,75 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read #This is required for actions/checkout
 
-    # Sets the default working directory for all run scripts in this job
+    permissions:
+      contents: read
+
     defaults:
       run:
         working-directory: ./backend
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Set up Node.js version
-        uses: actions/setup-node@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: '24.x'
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
 
-      - name: npm install, build, and test
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build --if-present
+
+      - name: Run tests
+        run: npm test --if-present
+
+      - name: Show backend contents
         run: |
-          npm install
-          npm run build --if-present
-          npm run test --if-present
+          echo "Current directory:"
+          pwd
+          echo ""
+          echo "Backend size:"
+          du -sh .
+          echo ""
+          echo "Largest folders:"
+          du -sh * | sort -hr | head -20
 
-      - name: Upload artifact for deployment job
+      - name: Remove node_modules before packaging
+        run: rm -rf node_modules
+
+      - name: Upload backend artifact
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: ./backend # Tells GitHub to only upload the backend folder content
+          path: backend
+          if-no-files-found: error
 
   deploy:
     runs-on: ubuntu-latest
     needs: build
+
     permissions:
-      id-token: write #This is required for requesting the JWT
-      contents: read #This is required for actions/checkout
+      id-token: write
+      contents: read
 
     steps:
-      - name: Download artifact from build job
+      - name: Download artifact
         uses: actions/download-artifact@v4
         with:
           name: node-app
-        
+
+      - name: Show downloaded files
+        run: |
+          pwd
+          ls -la
+          du -sh .
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -60,10 +88,10 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_B032CBFCB4FE4CF6B3FC7B455A7E314E }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_12BDC776AC23431F83ABFBA565AF3406 }}
 
-      - name: 'Deploy to Azure Web App'
-        id: deploy-to-webapp
+      - name: Deploy to Azure Web App
+        id: deploy
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'carewave-backend'
-          slot-name: 'Production'
-          package: . # Keeps it as dot because download-artifact extracts directly into the root of this job
+          app-name: carewave-backend
+          slot-name: Production
+          package: .
